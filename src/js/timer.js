@@ -1,17 +1,31 @@
 // создаем класс для счетчика
 
 const Timer = class {
-  // зададим приватное свойство - uniq id
-  #id = Date.now();
-  _title;
+  id = Date.now();
   _counter;
-  // принимает параметры название и счетчик
-  constructor(title, counter = 0) {
-    // имя счетчика только для чтения
-    this._title = title;
-    // счетчик делаем только для чтения
-    this._counter = counter;
+  activeTask = null;
+  // принимает параметры
+  constructor({
+    taskTime = 25,
+    pauseTime = 5,
+    bigPauseTime = 15,
+    tasks = [],
+  }) {
+    this.taskTime = taskTime;
+    this.pauseTime = pauseTime;
+    this.bigPauseTime = bigPauseTime;
+    this.tasks = tasks;
   }
+
+  // добавить задачу
+  addTask(task) {
+    this.tasks.push(task);
+  }
+  // делает задачу активной
+  doActiveTask(id) {
+
+  }
+
 
   // геттер для счетчика
   get counter() {
@@ -22,16 +36,6 @@ const Timer = class {
   set counter(value) {
     this._counter = value;
   }
-
-  // сеттер для имени счетчика
-  set title(value) {
-    this._title = value;
-  }
-
-  // геттер для имени счетчика
-  get title() {
-    return this._title;
-  }
 }
 
 const newTimer = new Timer('Новый таймер');
@@ -39,6 +43,4 @@ const newTimer = new Timer('Новый таймер');
 // меняю значение счетчика +1
 newTimer.counter = 1;
 console.log('newTimer.counter: ', newTimer.counter);
-// меняю имя счетчика
-newTimer.title = 'Old timer';
-console.log('newTimer.title: ', newTimer.title);
+
