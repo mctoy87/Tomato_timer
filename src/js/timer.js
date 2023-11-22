@@ -1,5 +1,8 @@
-// создаем класс для счетчика
+//  создать переменную с именем экземпляр (для синглтона)
+let _instance;
 
+
+// создаем класс для счетчика
 const Timer = class {
   // id задача
   idTask = Date.now();
@@ -22,10 +25,17 @@ const Timer = class {
     // задачи(массив)
     tasks = [],
   }) {
+    // если экземпляр класса есть
+    if (_instance) {
+      // вернуть этот экземпляр
+      return _instance;
+    }
     this.taskTime = taskTime;
     this.pauseTime = pauseTime;
     this.bigPauseTime = bigPauseTime;
     this.tasks = tasks;
+    // если нет экземпляра класса, то сделать его текущим экземпляром
+    _instance = this;
   }
 
   // добавить задачу
@@ -44,7 +54,7 @@ const Timer = class {
     try {
       if (this.activeTask) {
         const timer = this.getTimeRemaining();
-        console.log('timer: ', timer);
+        // console.log('timer: ', timer);
   
         // запустить каждую секунду таймер рекурсией
         const inervalId = setTimeout(() => {
@@ -121,8 +131,125 @@ const Timer = class {
   }
 };
 
+// создать Класс для задач
+const Task = class {
+  constructor(text = '') {
+    // описание задачи
+    this.text = text;
+    // счетчик помодорок
+    this.count = 0;
+    // id задача
+    this.idTask = Date.now();
+  }
+};
+
+// создать наследованный Класс для важных задач
+class ImportantTask extends Task {
+  constructor(text = '', importance = 'important') {
+    super();
+    // описание задачи
+    this.text = text;
+    // счетчик помодорок
+    this.count = 0;
+    // id задача
+    this.idTask = Date.now();
+    this.importance = importance;
+  }
+}
+
+// создать наследованный Класс для важных задач
+class StandartTask extends Task {
+  constructor(text = '', importance = 'standart') {
+    super();
+    // описание задачи
+    this.text = text;
+    // счетчик помодорок
+    this.count = 0;
+    // id задача
+    this.idTask = Date.now();
+    this.importance = importance;
+  }
+}
+
+// создать наследованный Класс для важных задач
+class UnimportantTask extends Task {
+  constructor(text = '', importance = 'unimportant') {
+    super();
+    // описание задачи
+    this.text = text;
+    // счетчик помодорок
+    this.count = 0;
+    // id задача
+    this.idTask = Date.now();
+    this.importance = importance;
+  }
+}
+
+// отвечает за взаимодействие с пользователем, события
+const ControllerTomato = class {
+  constructor() {
+    this.model = new Timer('Новый таймер');
+  }
+  // контроллер добавления задачи
+  handleAddTask(task) {
+    this.model.addTask(task);
+  }
+  // контроллер для активирования задачи из списка задач
+  handleDoActiveTask(idTask) {
+    this.model.doActiveTask(idTask);
+  }
+  // контроллер запуска таймера
+  handleInitTimer() {
+    this.model.initTimer();
+  }
+};
+
+// отвечает за визуальную часть(верстка)
+const RenderTomato = class {
+  // передаем в конструктор обертку приложения Tomato
+  constructor(root) {
+    this.root = root;
+    this.controller = new ControllerTomato();
+
+    // получить элементы со страницы
+    this.windowButtons = document.querySelector('.window__body');
+    this.taskForm = document.querySelector('.task-form');
+    this.pomodoroTasks = document.querySelector('.pomodoro-tasks');
+  }
+
+
+  // слушатели событий
+  bindListeners() {
+    // на запуск таймера задачи
+    this.windowButtons.addEventListener('click', (e) => {
+      e.preventDefault();
+      const target = e.target;
+      if (target.classList.contains('button-primary')) {
+        this.controller.handleInitTimer();
+      }
+    });
+    // на добавление задачи
+    this.taskForm.addEventListener('click', (event) => {
+      event.preventDefault();
+      const target = event.target;
+      if (target.classList.contains('task-form__add-button')) {
+        this.controller.handleAddTask();
+      }
+    });
+  }
+};
+
 // создание таймера с помощью конструктора
-const newTimer = new Timer('Новый таймер');
+const newTimer = new Timer({
+  // время задачи
+  taskTime: 5,
+  // время паузы
+  pauseTime: 10,
+  // время большой паузы
+  bigPauseTime: 15,
+  // задачи(массив)
+  tasks: [],
+});
 console.log('newTimer.counter: ', newTimer.counter);
 // добавить задачу в массив задач
 newTimer.addTask({
@@ -134,4 +261,8 @@ newTimer.doActiveTask(newTimer.idTask);
 newTimer.getDeadline();
 // вызов таймера
 newTimer.initTimer();
+
+
+const renderTomato = new RenderTomato(document.querySelector('.main'));
+console.log('renderTomato: ', renderTomato);
 
