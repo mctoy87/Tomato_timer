@@ -41,8 +41,9 @@ const Timer = class {
   // добавить задачу
   addTask(task) {
     this.tasks.push(task);
-    task.id = Date.now();
-    this.taskId = task.id;
+    console.log('tasks: ', this.tasks);
+    // task.id = Date.now();
+    // this.taskId = task.id;
   }
   // делает задачу активной
   doActiveTask(idTask) {
@@ -54,7 +55,7 @@ const Timer = class {
     try {
       if (this.activeTask) {
         const timer = this.getTimeRemaining();
-        // console.log('timer: ', timer);
+        console.log('timer: ', timer);
   
         // запустить каждую секунду таймер рекурсией
         const inervalId = setTimeout(() => {
@@ -193,6 +194,7 @@ const ControllerTomato = class {
   // контроллер добавления задачи
   handleAddTask(task) {
     this.model.addTask(task);
+    console.log('task: ', task);
   }
   // контроллер для активирования задачи из списка задач
   handleDoActiveTask(idTask) {
@@ -213,6 +215,8 @@ const RenderTomato = class {
 
     // получить элементы со страницы
     this.windowButtons = document.querySelector('.window__body');
+    this.panelTitle = document.querySelector('.window__panel-title');
+    this.panelText = document.querySelector('.window__panel-task-text');
     this.taskForm = document.querySelector('.task-form');
     this.pomodoroTasks = document.querySelector('.pomodoro-tasks');
   }
@@ -224,6 +228,7 @@ const RenderTomato = class {
     this.windowButtons.addEventListener('click', (e) => {
       e.preventDefault();
       const target = e.target;
+      console.log('target: ', target);
       if (target.classList.contains('button-primary')) {
         this.controller.handleInitTimer();
       }
@@ -233,12 +238,40 @@ const RenderTomato = class {
       event.preventDefault();
       const target = event.target;
       if (target.classList.contains('task-form__add-button')) {
-        this.controller.handleAddTask();
+        const taskText = this.taskForm.taskName.value;
+        const importance = this.taskForm.imporatance;
+
+        if (importance.classList.contains('default')) {
+          this.controller.handleAddTask(new StandartTask(taskText));
+        }
+        if (importance.classList.contains('important')) {
+          this.controller.handleAddTask(new ImportantTask(taskText));
+        }
+        if (importance.classList.contains('so-so')) {
+          this.controller.handleAddTask(new UnimportantTask(taskText));
+        }
       }
     });
+    // на активирование задачи
+    this.pomodoroTasks.addEventListener('click', (event) => {
+      event.preventDefault();
+      const target = event.target;
+      console.dir(target.innerText);
+
+      if (target.classList.contains('pomodoro-tasks__task-text')) {
+        this.controller.model.tasks.forEach(element => {
+          if (element.text === target.innerText) {
+            this.controller.handleDoActiveTask(element.idTask);
+            this.panelTitle.textContent = element.text;
+            this.panelText.textContent = `Томат ${element.count + 1}`;
+          }
+        });
+      }
+    })
   }
 };
 
+/*
 // создание таймера с помощью конструктора
 const newTimer = new Timer({
   // время задачи
@@ -261,8 +294,9 @@ newTimer.doActiveTask(newTimer.idTask);
 newTimer.getDeadline();
 // вызов таймера
 newTimer.initTimer();
-
+*/
 
 const renderTomato = new RenderTomato(document.querySelector('.main'));
 console.log('renderTomato: ', renderTomato);
+renderTomato.bindListeners();
 
