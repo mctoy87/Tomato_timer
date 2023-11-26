@@ -1,6 +1,6 @@
 //  создать переменную с именем экземпляр (для синглтона)
 let _instance;
-
+const timerText = document.querySelector('.window__timer-text');
 
 // создаем класс для счетчика
 const Timer = class {
@@ -19,7 +19,7 @@ const Timer = class {
     // время задачи
     taskTime = 1,
     // время паузы
-    pauseTime = 5,
+    pauseTime = 1,
     // время большой паузы
     bigPauseTime = 15,
     // задачи(массив)
@@ -43,7 +43,8 @@ const Timer = class {
     this.tasks.push(task);
     console.log('tasks: ', this.tasks);
     // task.id = Date.now();
-    // this.taskId = task.id;
+    this.taskId = task.id;
+    this._counter = task.count;
   }
   // делает задачу активной
   doActiveTask(idTask) {
@@ -55,6 +56,12 @@ const Timer = class {
     try {
       if (this.activeTask) {
         const timer = this.getTimeRemaining();
+        // отобразить таймер на странице
+        // если цифра меньше 10, то добавить 0
+        timerText.innerText = `${timer.minutes < 10 ?
+          '0' + timer.minutes : timer.minutes}:${
+            timer.seconds < 10 ?
+            '0' + timer.seconds : timer.seconds}`;
         console.log('timer: ', timer);
   
         // запустить каждую секунду таймер рекурсией
@@ -202,6 +209,8 @@ const ControllerTomato = class {
   }
   // контроллер запуска таймера
   handleInitTimer() {
+    // считает deadline задачи
+    this.model.getDeadline();
     this.model.initTimer();
   }
 };
@@ -214,7 +223,8 @@ const RenderTomato = class {
     this.controller = new ControllerTomato();
 
     // получить элементы со страницы
-    this.windowButtons = document.querySelector('.window__body');
+    this.windowButtons = document.querySelector('.window__buttons');
+
     this.panelTitle = document.querySelector('.window__panel-title');
     this.panelText = document.querySelector('.window__panel-task-text');
     this.taskForm = document.querySelector('.task-form');
@@ -228,26 +238,37 @@ const RenderTomato = class {
     this.windowButtons.addEventListener('click', (e) => {
       e.preventDefault();
       const target = e.target;
-      console.log('target: ', target);
+
+      // проверяем нажали ли на кнопку старт
       if (target.classList.contains('button-primary')) {
         this.controller.handleInitTimer();
+        console.dir(this.controller);
       }
     });
     // на добавление задачи
     this.taskForm.addEventListener('click', (event) => {
       event.preventDefault();
       const target = event.target;
+      // проверяем нажали ли на кнопку Добавить задачу
       if (target.classList.contains('task-form__add-button')) {
+        // вытаскиваем текст задачи
         const taskText = this.taskForm.taskName.value;
+        // вытаскиваем кнопку Важность задачи
         const importance = this.taskForm.imporatance;
 
+        // если важность обычная (проверяем класс)
         if (importance.classList.contains('default')) {
+          // инициируем обычную задачу
           this.controller.handleAddTask(new StandartTask(taskText));
         }
+        // если важность важная (проверяем класс)
         if (importance.classList.contains('important')) {
+          // инициируем важную задачу
           this.controller.handleAddTask(new ImportantTask(taskText));
         }
+        // если важность неважная (проверяем класс)
         if (importance.classList.contains('so-so')) {
+          // инициируем неважную задачу
           this.controller.handleAddTask(new UnimportantTask(taskText));
         }
       }
@@ -256,14 +277,35 @@ const RenderTomato = class {
     this.pomodoroTasks.addEventListener('click', (event) => {
       event.preventDefault();
       const target = event.target;
-      console.dir(target.innerText);
 
+      // проверяем нажали ли на тексте задачи
       if (target.classList.contains('pomodoro-tasks__task-text')) {
+        // перебираем весь массив задач
         this.controller.model.tasks.forEach(element => {
+          // если текст задачи в массиве совпадает с выбранной пользователем
           if (element.text === target.innerText) {
+            // активируем задачу по id
             this.controller.handleDoActiveTask(element.idTask);
+            // меняем текст задачи на панели задач
             this.panelTitle.textContent = element.text;
-            this.panelText.textContent = `Томат ${element.count + 1}`;
+            // меняем счетчик помодоро на панели задач
+            this.panelText.textContent = `Томат ${this.controller.model._counter}`;
+
+            // получаем все задачи из верстки
+            const tasksList = document.querySelectorAll(
+                '.pomodoro-tasks__task-text');
+            console.log('tasksList: ', tasksList);
+            // перебираем все задачи из верстки
+            tasksList.forEach(item => {
+              // если совпадает с задачей по клику
+              if (item.innerText === target.innerText) {
+                // делаем подсветку задачи
+                item.classList.add('pomodoro-tasks__task-text_active');
+                // если нет - убираем подсветку
+              } else {
+                item.classList.remove('pomodoro-tasks__task-text_active');
+              }
+            });
           }
         });
       }
