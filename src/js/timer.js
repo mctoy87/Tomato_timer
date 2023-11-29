@@ -2,6 +2,7 @@
 let _instance;
 const timerText = document.querySelector('.window__timer-text');
 
+
 // создаем класс для счетчика
 const Timer = class {
   // id задача
@@ -10,7 +11,7 @@ const Timer = class {
   _counter = 0;
   // активнная задача
   activeTask = null;
-  // дедлайн задачи
+  // дедлайн времени помодоро/паузы
   deadline = null;
   // флаг пауза/задача
   pause = false;
@@ -21,7 +22,7 @@ const Timer = class {
     // время паузы
     pauseTime = 1,
     // время большой паузы
-    bigPauseTime = 15,
+    bigPauseTime = 1,
     // задачи(массив)
     tasks = [],
   }) {
@@ -41,9 +42,8 @@ const Timer = class {
   // добавить задачу
   addTask(task) {
     this.tasks.push(task);
-    console.log('tasks: ', this.tasks);
     // task.id = Date.now();
-    this.taskId = task.id;
+    // this.taskId = task.id;
     this._counter = task.count;
   }
   // делает задачу активной
@@ -62,26 +62,32 @@ const Timer = class {
           '0' + timer.minutes : timer.minutes}:${
             timer.seconds < 10 ?
             '0' + timer.seconds : timer.seconds}`;
-        console.log('timer: ', timer);
-  
+
         // запустить каждую секунду таймер рекурсией
         const inervalId = setTimeout(() => {
           this.initTimer();
         }, 1000);
-  
+
         // если таймер обнулился
-        if (timer.seconds === 0 && timer.minutes === 0) {
+        if (timer.timeRemaining <= 0) {
+          // обнуляю таймер
+          timerText.innerText = '00:00';
           // удаляю таймер
           clearTimeout(inervalId);
-          // меняю значение счетчика +1
-          this.counter += 1;
-          console.log('this.counter: ', this.counter);
+
           // меняю значение флага пауза/задача
           this.toogleStatus();
+          // если не пауза
+          if (!this.pause) {
+            // меняю значение счетчика +1
+            this.counter += 1;
+            // отображаю на панели задач
+            this.showTaskStatus();
+          }
           // меняю деадлайн
           this.getDeadline();
-          // запускаю таймер
-          this.initTimer();
+          // запускаю таймер если счетчик меньше 4
+          if (this.counter < 4) this.initTimer();
         }
       } else throw Error('Ошибка, нет активной задачи');
     } catch (err) {
@@ -105,21 +111,18 @@ const Timer = class {
   getDeadline() {
     // если флаг пауза
     if (this.pause === true) {
-      // и если счетчик задачи кратен 3
-      if (this.counter % 3 === 0) {
+      // и если счетчик задачи не равен 0 и кратен 3
+      if (this.counter !== 0 && this.counter % 3 === 0) {
         // дедлайн высчитывается от большой паузы
         this.deadline = new Date(Date.now() + this.bigPauseTime * 1000 * 60);
-        console.log('deadline: ', this.deadline);
       } else {
         // иначе дедлайн высчитывается от малой паузы
         this.deadline = new Date(Date.now() + this.pauseTime * 1000 * 60);
-        console.log('deadline: ', this.deadline);
       }
       // если флаг задача
     } else {
       // дедлайн высчитывается от задачи
       this.deadline = new Date(Date.now() + this.taskTime * 1000 * 60);
-      console.log('deadline: ', this.deadline);
     }
   }
 
@@ -167,7 +170,7 @@ class ImportantTask extends Task {
 
 // создать наследованный Класс для важных задач
 class StandartTask extends Task {
-  constructor(text = '', importance = 'standart') {
+  constructor(text = '', importance = 'default') {
     super();
     // описание задачи
     this.text = text;
@@ -181,7 +184,7 @@ class StandartTask extends Task {
 
 // создать наследованный Класс для важных задач
 class UnimportantTask extends Task {
-  constructor(text = '', importance = 'unimportant') {
+  constructor(text = '', importance = 'so-so') {
     super();
     // описание задачи
     this.text = text;
@@ -201,7 +204,6 @@ const ControllerTomato = class {
   // контроллер добавления задачи
   handleAddTask(task) {
     this.model.addTask(task);
-    console.log('task: ', task);
   }
   // контроллер для активирования задачи из списка задач
   handleDoActiveTask(idTask) {
@@ -224,13 +226,12 @@ const RenderTomato = class {
 
     // получить элементы со страницы
     this.windowButtons = document.querySelector('.window__buttons');
-
-    this.panelTitle = document.querySelector('.window__panel-title');
-    this.panelText = document.querySelector('.window__panel-task-text');
     this.taskForm = document.querySelector('.task-form');
     this.pomodoroTasks = document.querySelector('.pomodoro-tasks');
+    this.panelTitle = document.querySelector('.window__panel-title');
+    this.panelText = document.querySelector('.window__panel-task-text');
+    this.tasksList = document.querySelector('.pomodoro-tasks__quest-tasks');
   }
-
 
   // слушатели событий
   bindListeners() {
@@ -242,7 +243,6 @@ const RenderTomato = class {
       // проверяем нажали ли на кнопку старт
       if (target.classList.contains('button-primary')) {
         this.controller.handleInitTimer();
-        console.dir(this.controller);
       }
     });
     // на добавление задачи
@@ -259,17 +259,29 @@ const RenderTomato = class {
         // если важность обычная (проверяем класс)
         if (importance.classList.contains('default')) {
           // инициируем обычную задачу
-          this.controller.handleAddTask(new StandartTask(taskText));
+          const task = new StandartTask(taskText);
+          // передаем контроллеру
+          this.controller.handleAddTask(task);
+          // рендерим на странице
+          this.renderTaskList(task);
         }
         // если важность важная (проверяем класс)
         if (importance.classList.contains('important')) {
           // инициируем важную задачу
-          this.controller.handleAddTask(new ImportantTask(taskText));
+          const task = new ImportantTask(taskText);
+          // передаем контроллеру
+          this.controller.handleAddTask(task);
+          // рендерим на странице
+          this.renderTaskList(task);
         }
         // если важность неважная (проверяем класс)
         if (importance.classList.contains('so-so')) {
           // инициируем неважную задачу
-          this.controller.handleAddTask(new UnimportantTask(taskText));
+          const task = new UnimportantTask(taskText);
+          // передаем контроллеру
+          this.controller.handleAddTask(task);
+          // рендерим на странице
+          this.renderTaskList(task);
         }
       }
     });
@@ -287,14 +299,11 @@ const RenderTomato = class {
             // активируем задачу по id
             this.controller.handleDoActiveTask(element.idTask);
             // меняем текст задачи на панели задач
-            this.panelTitle.textContent = element.text;
-            // меняем счетчик помодоро на панели задач
-            this.panelText.textContent = `Томат ${this.controller.model._counter}`;
+            this.renderTaskStatus(element.text, element.count);
 
             // получаем все задачи из верстки
             const tasksList = document.querySelectorAll(
                 '.pomodoro-tasks__task-text');
-            console.log('tasksList: ', tasksList);
             // перебираем все задачи из верстки
             tasksList.forEach(item => {
               // если совпадает с задачей по клику
@@ -309,7 +318,28 @@ const RenderTomato = class {
           }
         });
       }
-    })
+    });
+  }
+  // отображает список задач
+  renderTaskList(task) {
+    // заполняем список задач
+    this.tasksList.insertAdjacentHTML('beforeend', `
+      <li class="pomodoro-tasks__list-task ${task.importance}">
+        <span class="count-number">${task.count + 1}</span>
+        <button class="pomodoro-tasks__task-text">
+          ${task.text}
+        </button>
+        <button class="pomodoro-tasks__task-button"></button>
+      </li>
+    `);
+  }
+
+  // отображает текст и текущий счетчик помодоро на панели задач
+  renderTaskStatus(text, count) {
+    // меняем текст задачи на панели задач если задан текст
+    text ? this.panelTitle.textContent = text : '';
+    // меняем счетчик помодоро на панели задач
+    this.panelText.textContent = `Томат ${count + 1}`;
   }
 };
 
@@ -339,6 +369,5 @@ newTimer.initTimer();
 */
 
 const renderTomato = new RenderTomato(document.querySelector('.main'));
-console.log('renderTomato: ', renderTomato);
 renderTomato.bindListeners();
 
